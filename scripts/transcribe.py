@@ -1,9 +1,9 @@
 import os
 import openai
 import sys
-openai.api_key = os.getenv("OPENAI_API_KEY")
-video_id = sys.argv[1]
-audio_file_path = os.path.join(os.getcwd(), 'tmp', video_id + '.m4a')
+openai.api_key = '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'
+# video_id = sys.argv[1]
+audio_file_path = os.path.join(os.getcwd(), 'tmp', 'the-epic-stack.mp4')
 
 audio_file = open(audio_file_path, "rb")
 transcript = openai.Audio.transcribe(
@@ -11,10 +11,9 @@ transcript = openai.Audio.transcribe(
   model="whisper-1",
   response_format='srt',
   prompt=(
-      'I am a programmer. My name is Takuya. '
-      'This is a vlog about my app development, tech review, lifehacks, etc. '
-      'I have my own product called Inkdrop.'
-      'My YouTube channel is called devaslife. '
+      'This is a talk about epic stack using remix. '
+      'In this presentation Kent C. Dodds will talk about the epic stack. '
+      'This a talk for DevsNorth Community. '
   )
 )
 print(transcript)

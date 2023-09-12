@@ -1,3 +1,4 @@
 openai
 yt-dlp
 pysrt
+openai-whisper

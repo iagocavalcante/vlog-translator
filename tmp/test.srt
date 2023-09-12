@@ -1,11 +1,140 @@
-1
-00:00:01,000 --> 00:00:06,000
-Hey what's up, it's Takuya here. Welcome back to my weekly vlog.
-
-2
-00:00:06,000 --> 00:00:12,000
-So, we've got lots of updates on the Ink Drop for mobile version 5. So, let's get started.
-
-3
-00:00:12,000 --> 00:00:22,000
-First one is Solarize Dark Theme. This is a green UI theme, originally designed for the terminal.
+00:01 Hello. Let's talk about what is code extraction. Hi, my name is Mishko Heavy. I'm a CTO at builder io. We build this thing called the headless visual CMS system, where I also work on a project called Quick.
+00:14 In the past I've worked on angular gist and angular something called zone js, and I try to convince a lot of people that how to write clean testable code.
+00:24 And finally, I had a little bit to do with co-creating karma. Let's, let's talk about builder for a second. Builder is a headless visual CMS system.
+00:34 We basically make drag and drop development easy. We also are really care about our customers and want to have us really fast performance.
+00:42 And so we are focusing on this framework called quick, which does the best possible time to interactive party town for making third party code and mitosis, which allows you to red what your code wants and run on any framework.
+00:55 Specifically for the builder, we have this cool editor that you can see over here, and it allows you to drag and drop a react components or any technology stack you happen to be in.
+01:06 So think like big headless visual CMS systems, but for your for your website. So let's talk about code extraction. So what, what is a code extraction?
+01:19 So let's think about that for a second. So, code extraction is basically code co-location, meaning we wanna put code together between server and a client.
+01:28 What do you mean by that? Well, the kind of code that server has to execute is actually different than a kind of code the client executes on a server.
+01:35 First of all, we have things like MPMs, we can have file system access, we have private keys, which we don't want to share with the, with a user.
+01:43 And on the client side, we really care about size lazy loading, and of course the amount of bandwidth we consume.
+01:50 And so there's different constraints in how we package up code and how we write code. But what if and as a result, we put it into separate files.
+01:58 But what if you could put these two files together into one file? Like, does that seem like even a good idea?
+02:05 Well, the thing is, the reason you wanna do that is because when you've read code, you think linearly, you think about, you know, I do step A then step B, step C, and every time you're asking me to go to a different file, it actually kind of breaks my kind of flow of things.
+02:19 And so it's much easier if I could just explain everything in terms of like how the application should work inside of the same file.
+02:26 The moment you move things into separate files, that means you have to refer to things and you have to go and down the line of naming things and giving things names, and that's, that could be troublesome as well.
+02:35 And then because of that, it makes it difficult to navigate code. So somebody new to the project, you know, has to find out what all the pieces are.
+02:42 It, it's tricky for them. And once you separate things out into separate files, now the types don don't necessarily flow through the system, and you have to manually put the type system together and make sure that the types on a server and types on a client are the same.
+02:57 And now that's why we have systems like T RRP C, which is the typed RPCs that allows you to red code on both ends and, and be it correctly typed.
+03:06 And lastly, there's already a trend with existing meta frameworks to do some of this stuff. And I'm gonna show you kind of the simple stuff that is happening today and also the next step of the evolution of code colocation, which I think is what the future holds.
+03:22 So I kind of break down code co code extraction and code colocation. It took out three things. There's the export extraction, which we're gonna talk about first.
+03:30 This is kind of what next JS does today. There is function extraction, which is kind of the next level up, which is something like solid js is doing.
+03:38 And finally there's closure extraction, which is kind of the advanced mode of doing this. And this is something that quick JS does.
+03:45 So let's kind of look into export extraction. What is that? So if you look at next Js, the way next JS works is that you have the get static props, and basically this is a piece of coded executes on a server.
+03:56 So here is where you would do your database call, you could talk to database you could talk to file system, anything you want.
+04:01 This can be asynchronous. And so this piece of code right here executes on a server, whereas this piece of code over here executes well kind of in both places, server and client.
+04:12 That's the isomorphic portion of the code base, right? Because when you're doing a server side pre rendering, the component executes on the server.
+04:19 But when the component wakes up on a client after DEH hydration, these piece of code actually runs on the client.
+04:26 And so the way this actually works is that this particular thing is a well known export. Meaning if you look for who refers to get static props, if you go to your IDE and say like, gimme references to it, you will find that actually there is no reference.
+04:41 You know, nobody is referring to this particular thing, and yet the system kind of works. And the reason it works is because at runtime, using reflection, next JS can look at the file and say, Hey, does this file export this special method?
+04:56 And if so, I am going to call it. And whatever this special method returns, I will pass on to this component right here.
+05:04 And this is why we say this is a well-known export. And so the way it works is that we have colocated the, the, the code, the server code, and the client code together, and now we run a bundler.
+05:16 And when the bundler runs, you can turn on and off the tree shaker. So if the tree shakers turned off, the, the get server props file doesn't get removed, right?
+05:26 Because even though nobody's referring to it, and it's not needed, the tree shakers often. So that particular piece of code remains in the bundle.
+05:34 On the other hand, when you turn on tree shaker, the system notices like, Hey, nobody's actually referring to this piece of code and therefore it's, it's fair game for me to remove it.
+05:44 And so the kind of code the, what the, the bundles that get shipped to the client contain are much, much smaller because many of these extra server stuff gets removed.
+05:53 Whereas what is in executed on a server contains both the server beats that are accessed to a well known export, as well as the isomorphic code that runs both on a server and on a client.
+06:07 Now, the thing to understand is that there's this danger, which is that under no circumstances can a client refer to the server code, because if that happens, you will break the the, the tree shaker, right?
+06:23 The tree shaker gets broken the moment the client refers to the server code. And so we have to make sure that that does not happen.
+06:30 So let's, let's look at what, what is not allowed, right? You're not allowed to refer to this if you, if if this piece of code directly refers to that piece of code all bets are off, and now you have a bundle on the client that contains server related things.
+06:47 It could be things like private keys, file system access and other things, you know, basically the application stops working because the client cannot execute these piece of code.
+06:58 And so the thing is, we need to somehow refer to this type, right? We need to basically say that we wanna make sure that whatever we return here actually type wise, fits into what is being used at this particular location.
+07:13 And so we need a way to refer to this piece of code without actually referring to it. And so it turns out type script has two modes, right?
+07:21 You can refer to things in a type world or in design time, and you can also refer things by value.
+07:27 So you can re refer it either by type or by value. And because type script runs first, it actually removes all of the type information.
+07:35 So even though you're referring to get static props right here, the TypeScript removes this bit. And, and so it removes the reference to get static props before the tree shaker runs.
+07:46 And this is why the whole system works. However, if you think about it, this is kind of error prone because nothing, oops, nothing is making sure that this piece of code is actually being correctly referred to.
+08:00 Like I could have put in any, at this particular location, a system would work, I could have put in a string and you know, the system would take it.
+08:08 There's nothing in here that actually ensures that the data relationship is there. And the reason why there nothing re ensures this is because there's no value reference.
+08:17 If I could have a actual call to this function here, then the TypeScript would infer all of the property information, all the type information, and it would make it so that I don't even have to put any types in the right thing would happen.
+08:30 But we can't do that because doing so would break export extraction. So let's move on to the next level up.
+08:39 So this is kind of what we talked about so far is kind of what's happening today in many frame meta frameworks.
+08:45 This is a new kind of stuff function extraction that is up and coming and for example, solid jazz has just integrated it in.
+08:52 And so kinda let's zoom in on that. So the, the idea behind it is, what if you could mark a particular function such as over here as being a server function, and let's mark it using a special function called server dollar sign.
+09:08 And by marking it, you can now you basically are telling the system that this piece of code is on the server, whereas the rest of the code is on the client.
+09:17 So in this particular case, when you have a button, you click on the button, you're actually executing code on the server.
+09:23 Now that's kind of pretty cool stuff. I think it's pretty amazing, but how exactly would this work? You know, what is required to make this work?
+09:31 Because as of right now, there's a direct reference. You know, this button here, which is running on a client, is referring to the greeter server.
+09:40 And the greeter server presumably has code that you do not want or cannot include on a client. So what is happening here?
+09:48 So in order to do this, you need a piece of code called an optimizer. And you know, we already have code that does code transformation, like we call them bundlers, we call 'em compilers like type script and so on.
+09:58 So now we're introducing a new, kind of, a new kind of a tool in a tool chain called them optimizer.
+10:04 Our particular optimizer is actually written in the rust. So it's super, super fast. It's really efficient in the way transform things.
+10:10 And this optimizer does certain set of transformations to your source code. And so let's talk about these transformations and how these transformations allow you to refer to server side code from the client.
+10:23 So let's go back to this example, right? So let's again see that we have a button here, and this button has an un-click.
+10:29 And if I click on this button, I would like to call a server function called which actually just prints out hello.
+10:35 And I would like to pass in world into it, right? So I'm taking a value from the client calling a function on a server.
+10:42 You know, how could I do this? So let's, let's look at it again. So again, what the optimizer looks for is this marker function.
+10:50 And in this particular case, let's just say we're looking for server dollar sign. And what the optimizer does is it takes the body of the function that you see over here and pulls it out into a separate file.
+11:01 So you can see it generates some kind of a, a random file name with a hash on it, and a symbol that is, is being exported as so all these things are kind of generated automatically without you having to think about it.
+11:13 And the next thing you want to notice is this server dollar sign is coming from imported from some particular location.
+11:20 Now, what's actually interesting is that the optimizer doesn't actually care where it comes from. And this is actually kind of the power of it because you as a developer would like to define the semantics of what does it mean when I call server dollar sign.
+11:36 The optimizer job is really to just move the code around so that you can conditionally import or not import to the code.
+11:44 The optimizer job is really not to do anything else. And so in this particular case, let's just say we're importing it from some location.
+11:51 So the optimizer isn't looking for a, a specific import. What the optimizer is just looking for is any function call, which has the pattern that it ends in a dollar sign, right?
+12:01 So if you can think of it as an annotation, so the server dollar sign or food dollar sign or blank dollar sign, the dollar sign is a, is a form of an annotation, which tells the optimizer, I want you to apply this transformation in this particular location.
+12:16 And this is gonna become obvious more later on as to why it is that we want to kind of decouple this and not have it tied to a specific function.
+12:25 Okay? So the next thing the optimizer does is it transforms the source code as well, because this piece of code got extracted.
+12:31 What's left behind is a server proxy with a file name and a symbol name. And notice the way the optimizer, what it does, it simply replaces the dollar sign with the word proxy.
+12:43 And the same exact import, which was originally importing server dollar sign, now imports server proxy. So it's up to the developer to make sure that the second function is available for the import.
+12:55 Okay, so let's look at the server dollar sign function. So by default to refine, follow dollar sign function, again, this is something the developer could import define simply just executes the code straight up makes it async, as you can see over here so that we can lace load
+13:11 it or, you know, deal with the fact that it's a dynamic import, but for the most part, it doesn't do anything.
+13:15 Just passes it through. And the reason for that is because you want to make sure that even if the optimizer doesn't run, for example, in the case of unit tests, you still want to be able to call the function and perform the operations you want.
+13:26 Obviously, you'll, you'll only be able to do it on a server, but that's the per basically idea that the server dollar sign by default doesn't really do anything.
+13:35 Now, the server proxy function on the other hand is a little more complicated. And what it does is it has a built time switch, right?
+13:43 So during build time the, the build system can look at this particular value and says, Hey, am I building for server or am I building for a client?
+13:54 And based on that, it then returns one of two functions here. Now, if we are doing, if we're building for the server the, the, the steps are pretty straightforward, or what we're doing is we are calling, we are getting the file and the symbol name we are importing the file, getting the
+14:13 symbol out of the, the export, right? And then we are invoking, oops, we are invoking the function. So we're essentially doing it dynamically except for the fact that the file is somewhere else.
+14:25 Now, if we are building on the client, we can't dynamically import that, that file, because if we did that, we would break the system, right?
+14:31 Like you, the file presumably has things like file system access or, or something of that sort. So on the client, what we do is we instead generate kind of a proxy, which allows us to you know, call a well-known API surface where we tell it which file we want, which symbol we want to execute in
+14:49 there, and we essentially do a post and we pass in into the body the arguments of that function, and we wait for the response and re return the response back to the other side.
+14:59 So now we essentially gotten a kind of an RPC for free without really doing a lot of work. So let's kind of go on to the cementing meaning of the, of this particular bit.
+15:11 So what's cool about this is that as a developer, you know the, the optimizer of the system that does all these things doesn't define the meaning of this function.
+15:21 It doesn't even know which particular function you want. Instead, it just says, any function that adds a dollar sign will have this particular thing.
+15:28 And it is up to the developer to kind of define what is the meaning here. Maybe I want to have something like lazy dollar sign, which will dynamically LAIs load the piece of code only when executing and when needed.
+15:39 Maybe you want to run the code in the service worker, maybe I want to run it on a server execution as we have just shown, or maybe I am already on a server and I want to run it even on a, you know, not on another server somewhere even further down the line.
+15:52 So you can do that as well. Basically imagination is your limit. You can define your own ideas as to what these things could be and how they could work.
+16:02 Okay, so we talked about the export extraction, the function extraction. Let's take it up a next level. And let's talk about closure extraction.
+16:09 And I think this is, this is a kind of a cool bit out of it. So let's say we have the same exact demo where we have code, it's a button, there's a click on it, and we want to execute this piece of code right here on a server.
+16:22 But notice here this name, this name is not passed in as an argument. Instead name is captured inside of the lexile scope because this particular bit here is a closure.
+16:34 So if we just let the optimizer run the way it would normally run, it would generate something like this. And notice this name here is undefined.
+16:42 That's why there's a line through it, right? This is would be an error, right? You cannot do this because when you try to run it, the system would say like, Hey, I really have no idea what this name thing is.
+16:53 And so we need to somehow restore the, the lexile scope of the function when it was running. And so the way we can do that is we can the, the optimizer can generate a special call in the front called server lexile scope.
+17:07 This particular thing is, is imported again, from the same exact location whether the server dollar sign was imported. And it is up to this piece of this dysfunction to kind of restore whatever these variables used to be in order to make them run and work.
+17:25 So it also means that we have to change this piece of code right here, right? So instead of a server proxy simply referring to a particular file and a particular symbol, now we also have to pass in a set of variables that we are capturing.
+17:40 In other words, we're saying, look, these variables are gonna be needed later. So I'm gonna pass you into the server proxy.
+17:45 It's up to the server proxy. We're gonna figure out what to do with them. And then, then on the other side, we're going to call this lexile scope function to kind of restore the variable so that they become available to the code base.
+18:00 Alright, so how does this, how would this work? So let's say this is being created. So the first thing we need to do is we need to define this function called server lexile scope.
+18:10 This function is pretty straightforward, right? You just returned some global variable called lexile scope, and it's up to us to kind of define what their value is.
+18:17 And so if you look at the server impulse, which is the original well, this is what the, what the server proxy gets.
+18:26 You'll see that now we are passing in Lexile variables into it. And so what we have to change the code slightly.
+18:33 We have to obviously dynamically import the file. We have to get the symbol out of the module. We have to save the previous lexile scope.
+18:40 We have to restore the lexile scope that is being passed in. We have to then call the function, right? So when the function gets called, it will, this is the function right here.
+18:50 This is gonna get cold, this will coal, oops, this will coal this piece of code right here. And this code will return the lexile scope.
+18:57 In other words, it will be able to restore the value that we had over there. And then finally we have to clean up on finally.
+19:04 And so in this way, we can do that. Now, what I want to convince you is actually this is happening today, right?
+19:10 Like, so next JS already does export code colocation salad js just added the server dollar remix does export colocation as well.
+19:21 If you look at swt or nextt, et cetera, all of these systems are doing some form of export colocation. And quick, obviously as I showed, you can do pretty advanced stuff because you can not only export functions, but also closures as well.
+19:37 And so let's take kind of a step into the quick world and say like, well, what, what could you do if you had this kind of a code extraction that could co-locate stuff?
+19:50 So here I'm gonna show you a very simple piece of code. All it does is it runs some code on a server as you can see over here.
+19:58 And, you know, this is where you would put your database code, et cetera. On the component, it will fetch the data from the server that was passed in.
+20:06 And notice this bit right here can directly refer to the code over here. There's no need to kind of special type trickery or anything like that to make this work.
+20:17 We then render our button, et cetera. This button can have a code that runs on the client inside of this code.
+20:26 We can maybe create a timestamp or something like that, call a server function that prints something out and then come back out and return the whole thing.
+20:37 Now, what I wanna show you is, you know, this is a single piece of code, but the way to look at it is you are guaranteed that these bits of code will always run on a server.
+20:46 And the reason you know that as a developer is because you understand the semantic meaning of this, right? It's not the optimizer that is forcing a specific meaning onto you.
+20:56 Instead, it is the library that you happen to be using or the framework or the your own things that you happen to be using that give this this, this, this optimizer the semantic meaning to what it means.
+21:09 And so as a u as a developer, you know, when you develop with a particular library, you kind of know like, hey, this bit's right here I know will run on a server all the time.
+21:17 And it's kind of cool that you can just put everything in the same file and have all the pieces kind of work together.
+21:23 This piece of code on a hand hand will run both on a server and a client. Sometimes people refer to it as isomorphic execution, right?
+21:30 So on, on a server during server side rendering, you know that this particular code will execute. But you also know that this code can execute on the client because it's possible that you know, the component, it gets three rendered or something changes, et cetera.
+21:41 And so both places of execution are valid for this particular piece of code. But you can see that there's this island in the middle.
+21:50 This island will not execute on the client, you know, that for a fact. And so if you go even further now, you know that the on click listener only executes on the client, right?
+22:01 Like it's not possible to do any kind of dom event interactions on a server. And so you know that this piece, piece of code is for sure gonna run on the client.
+22:09 And inside of this piece of code, there is an actual island in there that that refers to piece of code that actually runs on a server.
+22:16 And so I think this is a good developer experience because you can, in a single file that in a very natural way express the behavior of the system.
+22:26 You can clearly say fetching data on the server. Here I am handling a click listener on this location. I am updating the UI over here and so on.
+22:35 And so the whole thing becomes very streamlined and straightforward. And so I think that the, the idea of code colocation and closure extraction actually brings a new level of developer experience productivity.
+22:50 And it it adds to, basically makes it easier for people to ex for developers to just express themselves as to what they want to build.
+22:59 Anyways, I hope you enjoyed this. You can find me more on Twitter at m Heavy. And if you wanna check out quick or builder you can find us at builder io or quick dot builder io.
+23:09 Yeah, hope you had fun.
