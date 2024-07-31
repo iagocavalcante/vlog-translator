@@ -1,7 +1,7 @@
 import os
 import openai
 import sys
-openai.api_key = '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'
+openai.api_key = ''
 # video_id = sys.argv[1]
 audio_file_path = os.path.join(os.getcwd(), 'tmp', 'the-epic-stack.mp4')
 
