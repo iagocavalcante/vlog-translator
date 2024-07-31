@@ -3,7 +3,7 @@ import sys
 import openai
 import pysrt
 
-openai.api_key = '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'
+openai.api_key = ''
 input_data = sys.stdin.read()
 subs = pysrt.from_string(input_data)
 
