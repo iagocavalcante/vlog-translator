@@ -1,4 +1,4 @@
-openai
+openai>=1.0
 yt-dlp
 pysrt
 openai-whisper

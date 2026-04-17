@@ -1,48 +1,41 @@
 import os
 import sys
-import openai
 import pysrt
+from openai import OpenAI
 
-openai.api_key = ''
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
 input_data = sys.stdin.read()
 subs = pysrt.from_string(input_data)
 
-prompt_base = (
-    "You are going to be a good translator. "
-    "Here is a part of the transcript of presentation. "
-    "Hello DevsNorte, I'm so excited to talk with you remotely about the epic stack. I've got a bit of a content warning here for you"
-    "Translate the following text precisely into Brazilian Portuguese"
-    "You will be a good talk translator. "
-    "Translate from [START] to [END]:\n[START]\n"
+SYSTEM_PROMPT = (
+    "You are a professional subtitle translator. "
+    "Translate the user's text into Brazilian Portuguese precisely and naturally, "
+    "preserving the original meaning and tone. "
+    "Return only the translated text, with no quotes, brackets, or commentary."
 )
 
 
-def translate_text(text):
-    prompt = prompt_base
-    prompt += text + "\n[END]"
-
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=prompt,
-        max_tokens=3000,
+def translate_text(text: str) -> str:
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
         temperature=0,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": text},
+        ],
     )
-    translated = response.choices[0].text.strip()
-    if translated.startswith('「'):
+    translated = (response.choices[0].message.content or "").strip()
+    if translated.startswith("「"):
         translated = translated[1:]
-    if translated.endswith('」'):
+    if translated.endswith("」"):
         translated = translated[:-1]
     return translated
 
-def write_to_file(text):
-    with open('translated.srt', 'w') as f:
-        f.write(text + '\n')
 
-save_target = 'the-epic-stack.vtt'
-with open(save_target, 'w') as file:
-    for index, subtitle in enumerate(subs):
-        subtitle.text = translate_text(subtitle.text)
-        file.write(str(subtitle.index) + '\n')
-        file.write(str(subtitle.start) + ' --> ' + str(subtitle.end) + '\n')
-        file.write(subtitle.text + '\n')
-        print(subtitle, flush=True)
+for subtitle in subs:
+    subtitle.text = translate_text(subtitle.text)
+    sys.stdout.write(f"{subtitle.index}\n")
+    sys.stdout.write(f"{subtitle.start} --> {subtitle.end}\n")
+    sys.stdout.write(f"{subtitle.text}\n\n")
+    sys.stdout.flush()
