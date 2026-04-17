@@ -1,6 +1,6 @@
-# Vlog Transcription & Japanese Translation Tool
+# Vlog Transcription & Brazilian Portuguese Translation Tool
 
-A personal tool for transcribing & translating my vlogs into Japanese.
+A personal tool for transcribing vlogs and translating them into Brazilian Portuguese.
 
 ![screenshot](./docs/screenshot.png)
 
@@ -13,22 +13,33 @@ A personal tool for transcribing & translating my vlogs into Japanese.
 - Python and [pip](https://pypi.org/project/pip/)
   - [pysrt](https://github.com/byroot/pysrt) - Python parser for SubRip (srt) files
   - [yt-dlp](https://github.com/yt-dlp/yt-dlp) - A youtube-dl fork with additional features and fixes
-  - [openai](https://github.com/openai/openai-python) - The OpenAI Python library provides convenient access to the OpenAI API from applications written in the Python language
-- Next.js
-- [Radix UI](https://www.radix-ui.com/) - Unstyled, accessible components for building high‑quality design systems and web apps in React
-- [Stitches](https://github.com/modulz/stitches) - CSS-in-JS Library
+  - [openai](https://github.com/openai/openai-python) (SDK v1+) - Official OpenAI Python library
+  - [openai-whisper](https://github.com/openai/whisper) - Optional, for fully local transcription
+- Next.js 16 (pages router)
+- [Radix UI](https://www.radix-ui.com/) - Unstyled, accessible components
+- [Stitches](https://github.com/stitchesjs/stitches) - CSS-in-JS library
 
 ## How to use
 
 1. Get your OpenAI API Key [here](https://platform.openai.com/account/api-keys)
-2. Set an environment variable `$OPENAI_API_KEY`
-3. Run the following commands
+2. Export the key: `export OPENAI_API_KEY=sk-...`
+3. Install and run:
 
 ```bash
 pip install -r requirements.txt
-npm i
+npm install
 npm run dev
 ```
+
+### Local (offline) transcription
+
+If you prefer to transcribe locally with Whisper instead of the OpenAI API:
+
+```bash
+python3 scripts/local-transcribe.py path/to/audio.mp3 output.vtt
+```
+
+This uses the `whisper` model directly on your machine (configured for `pt-br`).
 
 ## Project Structure
 
@@ -36,10 +47,10 @@ npm run dev
 PROJECT_ROOT
 ├── components    # React components
 ├── pages         # Pages
-│   └── api       # API routes
+│   └── api       # API routes
 ├── public
-├── scripts       # Python scripts
-├── tmp           # Temporary files
+├── scripts       # Python scripts (transcribe, translate, download)
+├── tmp           # Temporary files (downloaded audio)
 └── utils         # Utility modules
 ```
 
@@ -49,6 +60,6 @@ MIT License.
 
 ---
 
-Looking for a Markdown note-taking app? Check out my app called Inkdrop:
+Looking for a Markdown note-taking app? Check out Inkdrop:
 
 [![Inkdrop](https://github.com/craftzdog/dotfiles-public/raw/master/images/inkdrop.png)](https://www.inkdrop.app/)
