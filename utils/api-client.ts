@@ -58,6 +58,40 @@ export async function transcribe(
   }
 }
 
+export async function processLocalFile(
+  filePath: string,
+  callback: ProgressCallback
+): Promise<false | string> {
+  callback('Transcribing locally with Whisper. It takes a while...\n')
+  const srt = await transcribeLocalFile(filePath, callback)
+
+  if (srt) {
+    callback('\nTranslating text...\n')
+    const result = await translate(srt, callback)
+    callback('\nDone!\n')
+    return result
+  }
+
+  return false
+}
+
+export async function transcribeLocalFile(
+  filePath: string,
+  onProgress: ProgressCallback
+): Promise<string | false> {
+  const res = await fetch(
+    `/api/local-transcript?${new URLSearchParams({ path: filePath })}`,
+    {}
+  )
+  const reader = res.body?.getReader()
+
+  if (reader) {
+    return streamResponse(reader, onProgress)
+  } else {
+    return false
+  }
+}
+
 export async function translate(srtData: string, onProgress: ProgressCallback) {
   const res = await fetch(`/api/translate`, {
     method: 'POST',

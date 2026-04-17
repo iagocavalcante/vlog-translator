@@ -3,6 +3,7 @@ import { styled } from '../stitches.config'
 import { Box } from '../components/box'
 import { Output } from '../components/output'
 import { VideoForm } from '../components/video-form'
+import { LocalFileForm } from '../components/local-file-form'
 import {
   TabsContent,
   TabsList,
@@ -10,7 +11,11 @@ import {
   TabsTrigger
 } from '../components/tabs'
 import { useState } from 'react'
-import { extractVideoIdFromUrl, processVideo } from '../utils/api-client'
+import {
+  extractVideoIdFromUrl,
+  processLocalFile,
+  processVideo
+} from '../utils/api-client'
 
 const Text = styled('p', {
   fontFamily: '$system',
@@ -45,39 +50,86 @@ export default function Home() {
   const [isProcessing, setProcessing] = useState(false)
   const [progressOutput, setProgressOutput] = useState('')
   const [activeTab, setActiveTab] = useState('progress')
+  const [sourceTab, setSourceTab] = useState('youtube')
   const [resultTranscript, setResultTranscript] = useState('')
 
-  const handleStartProcessing = async (videoUrl: string) => {
-    const videoId = extractVideoIdFromUrl(videoUrl)
-    if (typeof videoId === 'string') {
-      setResultTranscript('')
-      setProcessing(true)
+  const runProcessing = async (task: () => Promise<string | false>) => {
+    setResultTranscript('')
+    setProcessing(true)
 
-      const transcriptInJapanese = await processVideo(videoId, message => {
+    const translated = await task()
+    if (translated) {
+      setResultTranscript(translated)
+    }
+
+    setProcessing(false)
+    setActiveTab('result')
+  }
+
+  const handleYouTubeSubmit = async (videoUrl: string) => {
+    let videoId: string | null
+    try {
+      videoId = extractVideoIdFromUrl(videoUrl)
+    } catch {
+      alert('Invalid URL')
+      return
+    }
+    if (!videoId) {
+      alert('Invalid URL')
+      return
+    }
+
+    await runProcessing(() =>
+      processVideo(videoId as string, message => {
         setProgressOutput(prev => prev + message)
       })
-      if (transcriptInJapanese) {
-        setResultTranscript(transcriptInJapanese)
-      }
+    )
+  }
 
-      setProcessing(false)
-      setActiveTab('result')
-    } else {
-      alert('Invalid URL')
+  const handleLocalFileSubmit = async (filePath: string) => {
+    if (!filePath) {
+      alert('Please enter a file path')
+      return
     }
+
+    await runProcessing(() =>
+      processLocalFile(filePath, message => {
+        setProgressOutput(prev => prev + message)
+      })
+    )
   }
 
   return (
     <Box css={{ paddingY: '$6' }}>
       <Head>
-        <title>YouTube Transcription &amp; Japanese Translation</title>
+        <title>Vlog Transcription &amp; Brazilian Portuguese Translation</title>
       </Head>
       <Container size={{ '@initial': '1', '@bp1': '2' }}>
-        <Text as="h1">Vlog Transcription &amp; Japanese Translation Tool</Text>
-        <VideoForm
-          onSubmit={handleStartProcessing}
-          isProcessing={isProcessing}
-        />
+        <Text as="h1">
+          Vlog Transcription &amp; Brazilian Portuguese Translation Tool
+        </Text>
+        <TabsRoot value={sourceTab} onValueChange={setSourceTab}>
+          <TabsList aria-label="Source">
+            <TabsTrigger value="youtube">YouTube</TabsTrigger>
+            <TabsTrigger value="local">Local file</TabsTrigger>
+          </TabsList>
+          <TabsContent value="youtube">
+            <Box css={{ paddingTop: '$3' }}>
+              <VideoForm
+                onSubmit={handleYouTubeSubmit}
+                isProcessing={isProcessing}
+              />
+            </Box>
+          </TabsContent>
+          <TabsContent value="local">
+            <Box css={{ paddingTop: '$3' }}>
+              <LocalFileForm
+                onSubmit={handleLocalFileSubmit}
+                isProcessing={isProcessing}
+              />
+            </Box>
+          </TabsContent>
+        </TabsRoot>
         <TabsRoot value={activeTab} onValueChange={setActiveTab}>
           <TabsList aria-label="Output">
             <TabsTrigger value="progress">Progress</TabsTrigger>
