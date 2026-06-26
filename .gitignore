@@ -20,6 +20,13 @@ tmp
 .DS_Store
 *.pem
 
+# python
+__pycache__/
+*.pyc
+
+# claude
+.claude-memory/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
